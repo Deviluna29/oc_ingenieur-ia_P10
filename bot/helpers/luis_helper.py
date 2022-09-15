@@ -13,8 +13,8 @@ class Intent(Enum):
     CANCEL = "Cancel"
     NONE_INTENT = "NoneIntent"
 
-KEY_LIST = ['or_city', 'dst_city', 'str_date', 'end_date', 'budget']
-
+MAP_KEY_ATTR = {'or_city': 'origin', 'dst_city':'destination', 'str_date': 'start_date', 'end_date': 'end_date', 'budget': 'budget'}
+MAP_KEY_TYPE = {'or_city': 'geographyV2_city', 'dst_city':'geographyV2_city', 'str_date': 'datetime', 'end_date': 'datetime', 'budget': 'number'}
 
 def top_intent(intents: Dict[Intent, dict]) -> TopIntent:
     max_intent = Intent.NONE_INTENT
@@ -48,39 +48,58 @@ class LuisHelper:
 
                 print(recognizer_result.entities)
 
-                # We need to get the result from the LUIS JSON which at every level returns an array.
-                to_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "dst_city", []
-                )
-                if len(to_entities) > 0:
-                    result.destination = to_entities[0]["text"].capitalize()
+                for (key, type) in MAP_KEY_TYPE.items():
+                    entity = LuisHelper._get_entity(recognizer_result, key, type)
 
-                from_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "or_city", []
-                )
-                if len(from_entities) > 0:
-                    result.origin = from_entities[0]["text"].capitalize()
-
-                budget_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "budget", []
-                )
-                if len(budget_entities) > 0:
-                    result.budget = budget_entities[0]["text"].capitalize()
-
-                str_date_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "str_date", []
-                )
-                if len(str_date_entities) > 0:
-                    result.start_date = str_date_entities[0]["text"].capitalize()
-
-                end_date_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "end_date", []
-                )
-                if len(end_date_entities) > 0:
-                    result.end_date = end_date_entities[0]["text"].capitalize()
+                    if entity is not None:
+                        setattr(result, MAP_KEY_ATTR[key], entity)
+                
                     
 
         except Exception as exception:
             print(exception)
 
         return intent, result
+
+    # Return the right entity in the Json
+    def _get_entity(recognizer_result, key, type):
+
+        if (recognizer_result.entities.get("$instance") is None
+            or recognizer_result.entities.get(key) is None
+            or len(recognizer_result.entities.get(key)) == 0) :
+            return None
+
+        score = 0
+        index = None
+
+        for i, entity in enumerate(recognizer_result.entities.get("$instance").get(key)):
+            if entity['score'] > score:
+                score = entity['score']
+                index = i
+
+        selected_entity = recognizer_result.entities.get("$instance").get(key)[index]
+
+        score = 100
+        index = None
+
+        for i, entity in enumerate(recognizer_result.entities.get("$instance").get(type)):
+            s = abs(entity['startIndex'] - selected_entity['startIndex']) + abs(entity['endIndex'] - selected_entity['endIndex'])
+            if s < score:
+                score = s
+                index = i
+
+
+        if (index is None
+            or recognizer_result.entities.get(type) is None
+            or len(recognizer_result.entities.get(type)) <= index):
+            return None
+        
+        return (
+            recognizer_result.entities.get(type)[index].capitalize()
+            if type == 'geographyV2_city'
+            else recognizer_result.entities.get(type)[index]["timex"][0]
+            if type == 'datetime'
+            else recognizer_result.entities.get(type)[index]
+            if type == 'number'
+            else None
+        )
