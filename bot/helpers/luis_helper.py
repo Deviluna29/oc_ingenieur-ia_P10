@@ -11,8 +11,9 @@ from booking_details import BookingDetails
 class Intent(Enum):
     BOOK_FLIGHT = "BookFlight"
     CANCEL = "Cancel"
-    GET_WEATHER = "GetWeather"
     NONE_INTENT = "NoneIntent"
+
+KEY_LIST = ['or_city', 'dst_city', 'str_date', 'end_date', 'budget']
 
 
 def top_intent(intents: Dict[Intent, dict]) -> TopIntent:
@@ -40,61 +41,44 @@ class LuisHelper:
 
         try:
             recognizer_result = await luis_recognizer.recognize(turn_context)
-
-            intent = (
-                sorted(
-                    recognizer_result.intents,
-                    key=recognizer_result.intents.get,
-                    reverse=True,
-                )[:1][0]
-                if recognizer_result.intents
-                else None
-            )
+            intent = recognizer_result.get_top_scoring_intent().intent
 
             if intent == Intent.BOOK_FLIGHT.value:
                 result = BookingDetails()
 
+                print(recognizer_result.entities)
+
                 # We need to get the result from the LUIS JSON which at every level returns an array.
                 to_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "To", []
+                    "dst_city", []
                 )
                 if len(to_entities) > 0:
-                    if recognizer_result.entities.get("To", [{"$instance": {}}])[0][
-                        "$instance"
-                    ]:
-                        result.destination = to_entities[0]["text"].capitalize()
-                    else:
-                        result.unsupported_airports.append(
-                            to_entities[0]["text"].capitalize()
-                        )
+                    result.destination = to_entities[0]["text"].capitalize()
 
                 from_entities = recognizer_result.entities.get("$instance", {}).get(
-                    "From", []
+                    "or_city", []
                 )
                 if len(from_entities) > 0:
-                    if recognizer_result.entities.get("From", [{"$instance": {}}])[0][
-                        "$instance"
-                    ]:
-                        result.origin = from_entities[0]["text"].capitalize()
-                    else:
-                        result.unsupported_airports.append(
-                            from_entities[0]["text"].capitalize()
-                        )
+                    result.origin = from_entities[0]["text"].capitalize()
 
-                # This value will be a TIMEX. And we are only interested in a Date so grab the first result and drop
-                # the Time part. TIMEX is a format that represents DateTime expressions that include some ambiguity.
-                # e.g. missing a Year.
-                date_entities = recognizer_result.entities.get("datetime", [])
-                if date_entities:
-                    timex = date_entities[0]["timex"]
+                budget_entities = recognizer_result.entities.get("$instance", {}).get(
+                    "budget", []
+                )
+                if len(budget_entities) > 0:
+                    result.budget = budget_entities[0]["text"].capitalize()
 
-                    if timex:
-                        datetime = timex[0].split("T")[0]
+                str_date_entities = recognizer_result.entities.get("$instance", {}).get(
+                    "str_date", []
+                )
+                if len(str_date_entities) > 0:
+                    result.start_date = str_date_entities[0]["text"].capitalize()
 
-                        result.travel_date = datetime
-
-                else:
-                    result.travel_date = None
+                end_date_entities = recognizer_result.entities.get("$instance", {}).get(
+                    "end_date", []
+                )
+                if len(end_date_entities) > 0:
+                    result.end_date = end_date_entities[0]["text"].capitalize()
+                    
 
         except Exception as exception:
             print(exception)

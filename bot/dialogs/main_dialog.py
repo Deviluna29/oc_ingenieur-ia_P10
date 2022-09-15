@@ -88,20 +88,9 @@ class MainDialog(ComponentDialog):
         )
 
         if intent == Intent.BOOK_FLIGHT.value and luis_result:
-            # Show a warning for Origin and Destination if we can't resolve them.
-            await MainDialog._show_warning_for_unsupported_cities(
-                step_context.context, luis_result
-            )
-
+            
             # Run the BookingDialog giving it whatever details we have from the LUIS call.
             return await step_context.begin_dialog(self._booking_dialog_id, luis_result)
-
-        if intent == Intent.GET_WEATHER.value:
-            get_weather_text = "TODO: get weather flow here"
-            get_weather_message = MessageFactory.text(
-                get_weather_text, get_weather_text, InputHints.ignoring_input
-            )
-            await step_context.context.send_activity(get_weather_message)
 
         else:
             didnt_understand_text = (
@@ -123,30 +112,11 @@ class MainDialog(ComponentDialog):
             # Now we have all the booking details call the booking service.
 
             # If the call to the booking service was successful tell the user.
-            # time_property = Timex(result.travel_date)
-            # travel_date_msg = time_property.to_natural_language(datetime.now())
-            msg_txt = f"I have you booked to {result.destination} from {result.origin} on {result.travel_date}"
+            # time_property = Timex(result.start_date)
+            # start_date_msg = time_property.to_natural_language(datetime.now())
+            msg_txt = f"I have you booked from {result.origin} to {result.destination}, departure date is {result.start_date} and return date is {result.end_date}, ticket price : {result.budget}"
             message = MessageFactory.text(msg_txt, msg_txt, InputHints.ignoring_input)
             await step_context.context.send_activity(message)
 
         prompt_message = "What else can I do for you?"
         return await step_context.replace_dialog(self.id, prompt_message)
-
-    @staticmethod
-    async def _show_warning_for_unsupported_cities(
-        context: TurnContext, luis_result: BookingDetails
-    ) -> None:
-        """
-        Shows a warning if the requested From or To cities are recognized as entities but they are not in the Airport entity list.
-        In some cases LUIS will recognize the From and To composite entities as a valid cities but the From and To Airport values
-        will be empty if those entity values can't be mapped to a canonical item in the Airport.
-        """
-        if luis_result.unsupported_airports:
-            message_text = (
-                f"Sorry but the following airports are not supported:"
-                f" {', '.join(luis_result.unsupported_airports)}"
-            )
-            message = MessageFactory.text(
-                message_text, message_text, InputHints.ignoring_input
-            )
-            await context.send_activity(message)
