@@ -64,7 +64,7 @@ class MainDialog(ComponentDialog):
             return await step_context.next(None)
         message_text = (
             str(step_context.options)
-            if step_context.options
+            if hasattr(step_context, "options") and step_context.options is not None
             else "What can I help you with today?"
         )
         prompt_message = MessageFactory.text(
