@@ -10,6 +10,8 @@ from botbuilder.core import MessageFactory, BotTelemetryClient, NullTelemetryCli
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from .date_resolver_dialog import DateResolverDialog
 
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 class BookingDialog(CancelAndHelpDialog):
     """Flight booking implementation."""
@@ -23,8 +25,14 @@ class BookingDialog(CancelAndHelpDialog):
             dialog_id or BookingDialog.__name__, telemetry_client
         )
         self.telemetry_client = telemetry_client
+
+        self.logger = logging.getLogger(__name__)
+
+        self.logger.addHandler(AzureLogHandler(
+            connection_string = self.telemetry_client._instrumentation_key)
+        )
+
         text_prompt = TextPrompt(TextPrompt.__name__)
-        text_prompt.telemetry_client = telemetry_client
 
         waterfall_dialog = WaterfallDialog(
             WaterfallDialog.__name__,
@@ -38,15 +46,14 @@ class BookingDialog(CancelAndHelpDialog):
                 self.final_step,
             ],
         )
-        waterfall_dialog.telemetry_client = telemetry_client
 
         self.add_dialog(text_prompt)
         self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__))
         self.add_dialog(
-            DateResolverDialog(DateResolverDialog.START_DATE_DIALOG_ID, self.telemetry_client)
+            DateResolverDialog(DateResolverDialog.START_DATE_DIALOG_ID)
         )
         self.add_dialog(
-            DateResolverDialog(DateResolverDialog.END_DATE_DIALOG_ID, self.telemetry_client)
+            DateResolverDialog(DateResolverDialog.END_DATE_DIALOG_ID)
         )
         self.add_dialog(waterfall_dialog)
 
@@ -164,10 +171,19 @@ class BookingDialog(CancelAndHelpDialog):
 
     async def final_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         """Complete the interaction and end the dialog."""
+        booking_details = step_context.options
+        
         if step_context.result:
-            booking_details = step_context.options
+
+            self.logger.setLevel(logging.INFO)
+            self.logger.info('Flight booked, customer satisfied')
 
             return await step_context.end_dialog(booking_details)
+
+        properties = {'custom_dimensions': booking_details.__dict__}
+        
+        self.logger.setLevel(logging.ERROR)
+        self.logger.error('Customer not satisfied with the Bot\'s proposition', extra=properties)
 
         return await step_context.end_dialog()
 

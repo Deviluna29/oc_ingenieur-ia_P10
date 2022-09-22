@@ -46,8 +46,6 @@ class LuisHelper:
             if intent == Intent.BOOK_FLIGHT.value:
                 result = BookingDetails()
 
-                print(recognizer_result.entities)
-
                 for (key, type) in MAP_KEY_TYPE.items():
                     entity = LuisHelper._get_entity(recognizer_result, key, type)
 
