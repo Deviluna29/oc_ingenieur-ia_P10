@@ -11,7 +11,7 @@ from booking_details import BookingDetails
 class Intent(Enum):
     BOOK_FLIGHT = "BookFlight"
     CANCEL = "Cancel"
-    NONE_INTENT = "NoneIntent"
+    NONE_INTENT = "None"
 
 MAP_KEY_ATTR = {'or_city': 'origin', 'dst_city':'destination', 'str_date': 'start_date', 'end_date': 'end_date', 'budget': 'budget'}
 MAP_KEY_TYPE = {'or_city': 'geographyV2_city', 'dst_city':'geographyV2_city', 'str_date': 'datetime', 'end_date': 'datetime', 'budget': 'number'}

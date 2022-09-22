@@ -10,8 +10,12 @@ from botbuilder.core import MessageFactory, BotTelemetryClient, NullTelemetryCli
 from .cancel_and_help_dialog import CancelAndHelpDialog
 from .date_resolver_dialog import DateResolverDialog
 
+from config import DefaultConfig
 import logging
 from opencensus.ext.azure.log_exporter import AzureLogHandler
+
+CONFIG = DefaultConfig()
+INSTRUMENTATION_KEY = CONFIG.APPINSIGHTS_INSTRUMENTATION_KEY
 
 class BookingDialog(CancelAndHelpDialog):
     """Flight booking implementation."""
@@ -27,9 +31,9 @@ class BookingDialog(CancelAndHelpDialog):
         self.telemetry_client = telemetry_client
 
         self.logger = logging.getLogger(__name__)
-
+        
         self.logger.addHandler(AzureLogHandler(
-            connection_string = self.telemetry_client._instrumentation_key)
+            connection_string = INSTRUMENTATION_KEY)
         )
 
         text_prompt = TextPrompt(TextPrompt.__name__)

@@ -38,7 +38,7 @@ class LuisTest(aiounittest.AsyncTestCase):
                 json.dumps(
                     {
                         "intent": intent,
-                        "booking_details": result.__dict__,
+                        "booking_details": None if not hasattr(result, "__dict__") else result.__dict__,
                     }
                 )
             )
@@ -49,8 +49,8 @@ class LuisTest(aiounittest.AsyncTestCase):
             "Hello",
             json.dumps(
                 {
-                    "intent": Intent.BOOK_FLIGHT.value,
-                    "booking_details": BookingDetails().__dict__,
+                    "intent": Intent.NONE_INTENT.value,
+                    "booking_details": None,
                 }
             ),
         )
