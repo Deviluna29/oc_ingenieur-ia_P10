@@ -1,3 +1,9 @@
+# ChatBot
+
+Projet 10 - Développez un chatbot pour réserver des vacances
+
+![Alt text](data/images/flyme.PNG?raw=true "Fly Me")
+
 # Résultats des Notebooks sous format HTML
 
 Les résultats des notebooks en pages HTML :
@@ -17,6 +23,10 @@ Activer l'environnement
 ```bash
 conda activate projet_10
 ```
+
+## Configuration
+
+Renommer le fichier `.env_sample` en `.env` et renseigner les informations de l'application LUIS
 
 ## Test unitaires
 
