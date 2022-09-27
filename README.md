@@ -34,4 +34,4 @@ Dans le dossier bot/tests/
 
 ## Architecture
 
-...
+![Alt text](data/images/architecture_01.png?raw=true "Architecture")
